@@ -12,3 +12,7 @@ env:
   KETO_OPL_URL: ""
   KETO_READ_URL: ""
   KETO_WRITE_URL: ""
+
+extraConfigmaps: []
+#  - name: keto-namespace-permissions
+#    mountPath: /etc/keto
