@@ -33,10 +33,10 @@ extraEnvSecrets: []
 
 extraConfigmaps: []
 #  - name: ory-auth-public
-#    mountPath: /app/public/favicon.ico
+#    mountPath: /app/auth/public/favicon.ico
 #    subPath: favicon.ico
 #    readOnly: true
 #  - name: ory-auth-public
-#    mountPath: /app/public/ory-logo-light.svg
+#    mountPath: /app/auth/public/ory-logo-light.svg
 #    subPath: ory-logo-light.svg
 #    readOnly: true
