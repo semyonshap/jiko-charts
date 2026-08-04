@@ -61,7 +61,7 @@ jobs:
         id: check
         run: |
           if helm show chart \
-              "oci://ghcr.io/${{ github.repository_owner }}/helm/${{ steps.info.outputs.name }}" \
+              "oci://ghcr.io/${{ github.repository_owner }}/${{ steps.info.outputs.name }}" \
               --version "${{ steps.info.outputs.version }}" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
