@@ -73,6 +73,7 @@ jobs:
       - name: Package and push
         if: steps.check.outputs.exists == 'false'
         run: |
+          helm dependency update "${{ matrix.dir }}"
           helm lint "${{ matrix.dir }}"
           helm package "${{ matrix.dir }}" --destination .release
           helm push ".release/${{ steps.info.outputs.name }}-${{ steps.info.outputs.version }}.tgz" \
