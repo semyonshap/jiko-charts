@@ -17,7 +17,7 @@ jobs:
     outputs:
       dirs: ${{ steps.find.outputs.dirs }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Find chart directories
         id: find
@@ -37,7 +37,7 @@ jobs:
         dir: ${{ fromJson(needs.detect-charts.outputs.dirs) }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Helm
         uses: azure/setup-helm@v4
