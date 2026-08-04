@@ -1,0 +1,16 @@
+apiVersion: v2
+name: nextjs
+description: Reusable Helm library chart for Next.js apps in the Ory stack (deployment, service, HPA, probes, security defaults)
+
+type: library
+
+version: 0.1.0
+appVersion: 0.1.0
+
+home: https://github.com/SemyonShap
+icon: https://nextjs.org/favicon.ico
+maintainers:
+  - name: SemyonShap
+    email: SemyonShapoval@gmail.com
+
+dependencies: []

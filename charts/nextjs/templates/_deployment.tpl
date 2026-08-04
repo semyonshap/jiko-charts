@@ -1,3 +1,4 @@
+{{- define "nextjs.deployment" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +8,9 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
 
 spec:
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
   strategy:
     {{- toYaml .Values.deployment.strategy | nindent 4 }}
@@ -100,3 +103,4 @@ spec:
             name: {{ .name }}
       {{- end }}
       {{- end }}
+{{- end -}}

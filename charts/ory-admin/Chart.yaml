@@ -23,4 +23,7 @@ maintainers:
   - name: SemyonShap
     email: SemyonShapoval@gmail.com
 
-dependencies: []
+dependencies:
+  - name: nextjs
+    version: "0.1.0"
+    repository: "file://../nextjs"

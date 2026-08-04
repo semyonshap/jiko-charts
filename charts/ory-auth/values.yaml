@@ -1,109 +1,49 @@
-replicaCount: 1
-
 image:
-  repository: ghcr.io/semyonshap/auth
-  tag: 0.1.0
-  pullPolicy: IfNotPresent
-
-serviceAccount:
-  create: true
-  name: ""
-  automount: false
+  repository: ghcr.io/semyonshap/ory-forms
+  tag: "0.1.0"
 
 service:
-  port: 3000
+  port: 80
   targetPort: 3000
 
-deployment:
-  revisionHistoryLimit: 3
-  strategy:
-    type: RollingUpdate
-
-autoscaling:
-  enabled: false
-  minReplicas: 2
-  maxReplicas: 4
-  targetCPUUtilizationPercentage: 70
-  targetMemoryUtilizationPercentage: 80
-
-livenessProbe:
-  path: /api/health
-  initialDelaySeconds: 15
-  periodSeconds: 15
-  timeoutSeconds: 5
-  failureThreshold: 6
-
-readinessProbe:
-  path: /api/health
-  initialDelaySeconds: 10
-  periodSeconds: 10
-  timeoutSeconds: 3
-  failureThreshold: 3
-
-startupProbe:
-  path: /api/health
-  initialDelaySeconds: 5
-  periodSeconds: 5
-  timeoutSeconds: 3
-  failureThreshold: 30
-
-resources:
-  limits:
-    cpu: 500m
-    memory: 512Mi
-  requests:
-    cpu: 100m
-    memory: 128Mi
-
-pod:
-  securityContext:
-    runAsUser: 65534
-    runAsGroup: 65534
-    fsGroup: 65534
-    runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
-  containerSecurityContext:
-    allowPrivilegeEscalation: false
-    privileged: false
-    readOnlyRootFilesystem: true
-    capabilities:
-      drop: [ALL]
-  terminationGracePeriodSeconds: 30
-
-nodeSelector: {}
-tolerations: []
-
-extraConfigmaps: []
-#  - name: ory-auth-assets
-#    mountPath: /app/public
-#    readOnly: true
-
 env:
-  # Kratos public API
-  NEXT_PUBLIC_ORY_SDK_URL: ""
+  NEXT_PUBLIC_ORY_SDK_URL: "http://kratos-public:4433"
+  ORY_HYDRA_URL: "http://hydra-public:4444"
+  NEXT_PUBLIC_PROJECT_SLUG: "CHANGE_ME"
+  NEXT_PUBLIC_PROJECT_ID: "CHANGE_ME"
+  TURNSTILE_SITE_KEY: "CHANGE_ME"
+  TURNSTILE_SECRET_KEY: "CHANGE_ME"
+  
+  NEXT_PUBLIC_ORY_SDK_URL: "https://auth-dev.with-jiko.com"
 
-  # Hydra admin API
-  ORY_HYDRA_URL: ""
+  ORY_HYDRA_URL: "https://auth-api-dev.with-jiko.com/hydra"
 
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: ""
-  TURNSTILE_SECRET_KEY: ""
 
   NEXT_PUBLIC_PROJECT_NAME: "Ory Auth"
   NEXT_PUBLIC_PROJECT_LOGO_LIGHT_URL: "/ory-logo-light.svg"
 
   NEXT_PUBLIC_CAPTCHA_ENABLED: false
 
-  NEXT_PUBLIC_BRAND_PRIMARY: ""
+  NEXT_PUBLIC_BRAND_PRIMARY: "rgb(103, 232, 249)"
 
   NEXT_PUBLIC_PROJECT_DEFAULT_LOCALE: en
   NEXT_PUBLIC_PROJECT_ENABLED_LOCALES: en
   NEXT_PUBLIC_PROJECT_LOCALE_BEHAVIOR: force_default
 
-extraEnvVars: []
+
 
 extraEnvSecrets: []
-# - name: SECRET_KEY
-#   secretName: my-secret
-#   secretKey: secret-key
+#  - name: TURNSTILE_SECRET_KEY
+#    secretName: my-namespace-secrets
+#    secretKey: TURNSTILE_SECRET_KEY
 
+extraConfigmaps: []
+#  - name: ory-auth-public
+#    mountPath: /app/public/favicon.ico
+#    subPath: favicon.ico
+#    readOnly: true
+#  - name: ory-auth-public
+#    mountPath: /app/public/ory-logo-light.svg
+#    subPath: ory-logo-light.svg
+#    readOnly: true

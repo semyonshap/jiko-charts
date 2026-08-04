@@ -1,3 +1,4 @@
+{{- define "nextjs.serviceaccount" -}}
 {{- if .Values.serviceAccount.create -}}
 apiVersion: v1
 kind: ServiceAccount
@@ -7,4 +8,5 @@ metadata:
   labels:
     {{- include "common.labels" . | nindent 4 }}
 automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
-{{- end }}
+{{- end -}}
+{{- end -}}

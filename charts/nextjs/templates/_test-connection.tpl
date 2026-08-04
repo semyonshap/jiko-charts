@@ -1,3 +1,4 @@
+{{- define "nextjs.test-connection" -}}
 apiVersion: v1
 kind: Pod
 metadata:
@@ -19,10 +20,10 @@ spec:
         - sh
         - -c
         - |
-          echo "=== ory-auth connection test ==="
+          echo "=== {{ .Chart.Name }} connection test ==="
           echo "Testing HTTP endpoint..."
           curl -sS --fail -o /dev/null -w "HTTP %{http_code}\n" \
-            http://{{ include "common.fullname" . }}:{{ .Values.service.port }}/api/health
+            http://{{ include "common.fullname" . }}:{{ .Values.service.port }}{{ .Values.readinessProbe.path }}
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:
@@ -36,3 +37,4 @@ spec:
           cpu: 10m
           memory: 32Mi
   restartPolicy: Never
+{{- end -}}
