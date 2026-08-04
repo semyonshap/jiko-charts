@@ -1,5 +1,5 @@
 image:
-  repository: ghcr.io/semyonshap/ory-auth
+  repository: ghcr.io/semyonshap/ory-forms/ory-auth
   tag: "1.0.0"
 
 service:
