@@ -10,7 +10,7 @@ rules:
   - apiGroups: [""]
     resources: ["secrets"]
     resourceNames: [{{ include "common.signingSecretName" . }}]
-    verbs: ["get"]
+    verbs: ["get", "patch"]
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["create"]

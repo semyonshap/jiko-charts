@@ -1,7 +1,7 @@
 {{- define "common.migrateInitContainer" -}}
 - name: migrate
   image: "{{ .Values.migration.image.repository | default .Values.image.repository }}:{{ .Values.migration.image.tag | default .Values.image.tag }}"
-  imagePullPolicy: {{ .Values.image.pullPolicy }}
+  imagePullPolicy: {{ .Values.migration.image.pullPolicy | default .Values.image.pullPolicy }}
   {{- if .Values.migration.command }}
   command:
     {{- toYaml .Values.migration.command | nindent 4 }}

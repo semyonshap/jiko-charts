@@ -31,7 +31,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "common.serviceAccountName" . }}
-      automountServiceAccountToken: {{ if .Values.secretsGeneration.jwks.enabled }}true{{ else }}{{ .Values.serviceAccount.automount }}{{ end }}
+      automountServiceAccountToken: {{ if and .Values.secretsGeneration.jwks.enabled (not (include "common.signingSecretExists" .)) }}true{{ else }}{{ .Values.serviceAccount.automount }}{{ end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -44,12 +44,13 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if or .Values.migration.enabled .Values.secretsGeneration.jwks.enabled }}
+      {{- $needsJwksInit := and .Values.secretsGeneration.jwks.enabled (not (include "common.signingSecretExists" .)) }}
+      {{- if or .Values.migration.enabled $needsJwksInit }}
       initContainers:
         {{- if .Values.migration.enabled }}
         {{- include "common.migrateInitContainer" . | nindent 8 }}
         {{- end }}
-        {{- if .Values.secretsGeneration.jwks.enabled }}
+        {{- if $needsJwksInit }}
         {{- include "common.jwksInitContainers" . | nindent 8 }}
         {{- end }}
       {{- end }}

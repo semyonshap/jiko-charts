@@ -108,6 +108,7 @@ migration:
   image:
     repository: ""  # defaults to .Values.image.repository
     tag: ""         # defaults to .Values.image.tag
+    pullPolicy: ""  # defaults to .Values.image.pullPolicy
   # Pull the DSN from an existing Secret instead of config.db.dsn:
   # (required — the chart fails render — when the DSN contains credentials)
   dsnSecret:
@@ -131,8 +132,9 @@ secretsGeneration:
     kid: "prod-signing-1"
     # Image that creates the Secret (needs a shell + kubectl).
     kubectlImage:
-      repository: bitnami/kubectl
-      tag: "1.33"
+      repository: docker.io/alpine/k8s
+      tag: "1.36.2"
+      pullPolicy: IfNotPresent
 
 # ---------------------------------------------------------------------------
 # Talos configuration -> /etc/talos/config.yaml (rendered as-is with toYaml).

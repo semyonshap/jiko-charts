@@ -19,8 +19,11 @@ Database migrations run as an initContainer before the server starts.
 
 HMAC secret ({{ include "common.fullname" . }}-secrets) and signing keys
 ({{ include "common.signingSecretName" . }}) are generated automatically and
-reused on restart. To rotate: delete the Secret(s), then run:
-  kubectl rollout restart deployment/{{ include "common.fullname" . }}
+reused across restarts. To rotate: delete the Secret(s), then re-apply the
+chart — the JWKS init containers only run while the Secret is missing, so a
+plain `kubectl rollout restart` is not enough:
+  kubectl delete secret {{ include "common.signingSecretName" . }} -n {{ .Release.Namespace }}
+  helm upgrade {{ .Release.Name }} . --reuse-values -n {{ .Release.Namespace }}
 {{- end }}
 {{- if and (contains "sqlite" .Values.config.db.dsn) (not .Values.persistence.enabled) }}
 
