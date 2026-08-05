@@ -17,9 +17,10 @@ Database migrations run as an initContainer before the server starts.
 {{- end }}
 {{- if or .Values.secretsGeneration.hmac.enabled .Values.secretsGeneration.jwks.enabled }}
 
-HMAC secret ({{ include "common.fullname" . }}-secrets) and JWKS keys
-(/var/lib/talos/jwks.json) are generated automatically and reused on restart.
-To rotate: delete them, then restart the pods / run `helm upgrade`.
+HMAC secret ({{ include "common.fullname" . }}-secrets) and signing keys
+({{ include "common.signingSecretName" . }}) are generated automatically and
+reused on restart. To rotate: delete the Secret(s), then run:
+  kubectl rollout restart deployment/{{ include "common.fullname" . }}
 {{- end }}
 {{- if and (contains "sqlite" .Values.config.db.dsn) (not .Values.persistence.enabled) }}
 

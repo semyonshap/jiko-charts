@@ -7,12 +7,3 @@
 {{- randAlphaNum 64 -}}
 {{- end -}}
 {{- end -}}
-
-{{- define "common.secretsChecksum" -}}
-{{- $secrets := dict -}}
-{{- if .Values.secretsGeneration.hmac.enabled -}}
-{{- $s := lookup "v1" "Secret" .Release.Namespace (printf "%s-secrets" (include "common.fullname" .)) -}}
-{{- $_ := set $secrets "hmac" (ternary (toJson $s.data) (randAlphaNum 8) (not (empty $s))) -}}
-{{- end -}}
-{{- toJson $secrets | sha256sum -}}
-{{- end -}}

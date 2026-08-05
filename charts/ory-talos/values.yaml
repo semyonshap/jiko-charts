@@ -120,16 +120,19 @@ migration:
 # Auto-generate the secrets Talos needs at startup, idempotently:
 # - hmac: generated in-template (sprig randAlphaNum); the existing value is
 #   reused on upgrade via `lookup`, so issued tokens stay valid.
-# - jwks: an initContainer runs `talos jwk generate` once and stores the
-#   Ed25519 key pair at /var/lib/talos/jwks.json on the data volume (only if
-#   absent); the server reads it from the same path.
-# Requires persistence.enabled (SQLite). Disable to bring your own keys.
+# - jwks: initContainers run `talos jwk generate` once and store the base64://
+#   signing URL in the <fullname>-signing Secret (only if absent); the server
+#   consumes it via the CREDENTIALS_DERIVED_TOKENS_JWT_SIGNING_KEYS_URLS env.
 secretsGeneration:
   hmac:
     enabled: true
   jwks:
     enabled: true
     kid: "prod-signing-1"
+    # Image that creates the Secret (needs a shell + kubectl).
+    kubectlImage:
+      repository: bitnami/kubectl
+      tag: "1.33"
 
 # ---------------------------------------------------------------------------
 # Talos configuration -> /etc/talos/config.yaml (rendered as-is with toYaml).
@@ -175,11 +178,11 @@ config:
       default_ttl: "1h"
       jwt:
         signing_keys:
-          # REQUIRED: point at the auto-generated keys on the data volume
-          # (/var/lib/talos/jwks.json) or inject the URLs via
-          # CREDENTIALS_DERIVED_TOKENS_JWT_SIGNING_KEYS_URLS.
-          urls:
-            - "file:///var/lib/talos/jwks.json"
+          # Talos accepts only base64:// URLs for signing keys. The chart
+          # auto-generates one and injects it via the env
+          # CREDENTIALS_DERIVED_TOKENS_JWT_SIGNING_KEYS_URLS (an initContainer
+          # creates the <fullname>-signing Secret). Leave urls empty here.
+          urls: []
       macaroon:
         prefix:
           current: "mc"
@@ -230,7 +233,7 @@ extraEnvSecrets: []
 #  - name: CREDENTIALS_ISSUER
 #    secretName: talos-secrets
 #    secretKey: issuer
-#  # Optional: signing key URLs (alternative to values.jwks).
+#  # Optional: signing key URLs (alternative to auto-generated signing keys).
 #  - name: CREDENTIALS_DERIVED_TOKENS_JWT_SIGNING_KEYS_URLS
 #    secretName: talos-secrets
 #    secretKey: jwksUrl

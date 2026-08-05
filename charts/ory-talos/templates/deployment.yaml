@@ -16,7 +16,6 @@ spec:
         {{- include "common.selectorLabels" . | nindent 8 }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-        checksum/secrets: {{ include "common.secretsChecksum" . }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -30,7 +29,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "common.serviceAccountName" . }}
-      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      automountServiceAccountToken: {{ if .Values.secretsGeneration.jwks.enabled }}true{{ else }}{{ .Values.serviceAccount.automount }}{{ end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -43,13 +42,13 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if or .Values.migration.enabled (and .Values.secretsGeneration.jwks.enabled .Values.persistence.enabled) }}
+      {{- if or .Values.migration.enabled .Values.secretsGeneration.jwks.enabled }}
       initContainers:
         {{- if .Values.migration.enabled }}
         {{- include "common.migrateInitContainer" . | nindent 8 }}
         {{- end }}
-        {{- if and .Values.secretsGeneration.jwks.enabled .Values.persistence.enabled }}
-        {{- include "common.jwksInitContainer" . | nindent 8 }}
+        {{- if .Values.secretsGeneration.jwks.enabled }}
+        {{- include "common.jwksInitContainers" . | nindent 8 }}
         {{- end }}
       {{- end }}
       containers:
@@ -68,7 +67,7 @@ spec:
             - name: http
               containerPort: {{ .Values.config.serve.http.port }}
               protocol: TCP
-          {{- if or .Values.extraEnvVars .Values.extraEnvSecrets .Values.secretsGeneration.hmac.enabled }}
+          {{- if or .Values.extraEnvVars .Values.extraEnvSecrets .Values.secretsGeneration.hmac.enabled .Values.secretsGeneration.jwks.enabled }}
           env:
           {{- if .Values.secretsGeneration.hmac.enabled }}
             - name: SECRETS_HMAC_CURRENT
@@ -76,6 +75,13 @@ spec:
                 secretKeyRef:
                   name: {{ include "common.fullname" . }}-secrets
                   key: hmac
+          {{- end }}
+          {{- if .Values.secretsGeneration.jwks.enabled }}
+            - name: CREDENTIALS_DERIVED_TOKENS_JWT_SIGNING_KEYS_URLS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.signingSecretName" . }}
+                  key: url
           {{- end }}
           {{- with .Values.extraEnvVars }}
           {{- toYaml . | nindent 12 }}
@@ -128,6 +134,10 @@ spec:
         - name: config
           configMap:
             name: {{ include "common.fullname" . }}-config
+      {{- if .Values.secretsGeneration.jwks.enabled }}
+        - name: shared
+          emptyDir: {}
+      {{- end }}
       {{- if .Values.persistence.enabled }}
         - name: data
           persistentVolumeClaim:

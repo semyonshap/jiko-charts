@@ -50,3 +50,7 @@ periodSeconds: {{ .periodSeconds }}
 timeoutSeconds: {{ .timeoutSeconds }}
 failureThreshold: {{ .failureThreshold }}
 {{- end -}}
+
+{{- define "common.signingSecretName" -}}
+{{- printf "%s-signing" (include "common.fullname" .) -}}
+{{- end -}}
