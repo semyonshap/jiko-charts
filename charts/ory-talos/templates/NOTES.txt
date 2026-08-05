@@ -13,13 +13,13 @@ To verify the deployment is running:
   kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "common.name" . }}
 {{- if .Values.migration.enabled }}
 
-Database migrations were applied as a pre-install / pre-upgrade Job hook.
+Database migrations run as an initContainer before the server starts.
 {{- end }}
 {{- if or .Values.secretsGeneration.hmac.enabled .Values.secretsGeneration.jwks.enabled }}
 
-Signing secrets ({{ include "common.fullname" . }}-secrets / -jwks) are generated
-automatically and reused on upgrade. To rotate: delete the Secret(s) and run
-`helm upgrade` again.
+HMAC secret ({{ include "common.fullname" . }}-secrets) and JWKS keys
+(/var/lib/talos/jwks.json) are generated automatically and reused on restart.
+To rotate: delete them, then restart the pods / run `helm upgrade`.
 {{- end }}
 {{- if and (contains "sqlite" .Values.config.db.dsn) (not .Values.persistence.enabled) }}
 

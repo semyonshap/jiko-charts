@@ -50,7 +50,3 @@ periodSeconds: {{ .periodSeconds }}
 timeoutSeconds: {{ .timeoutSeconds }}
 failureThreshold: {{ .failureThreshold }}
 {{- end -}}
-
-{{- define "common.jwksGeneratorName" -}}
-{{- printf "%s-jwks-generator" (include "common.fullname" .) -}}
-{{- end -}}
