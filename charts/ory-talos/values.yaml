@@ -1,0 +1,257 @@
+# Default values for ory-talos.
+#
+# The chart renders the Talos configuration (values.config) into a ConfigMap
+# mounted at /etc/talos/config.yaml, and the signing JWKS (values.jwks), when
+# set, into a Secret mounted at /etc/talos/jwks.json.
+#
+# Defaults below mirror deployments/docker/config/config.oss.yaml: a single
+# all-in-one OSS server with SQLite, so `helm install` works out of the box.
+
+image:
+  repository: oryd/talos
+  tag: "v26.2.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  automount: false
+  annotations: {}
+
+podAnnotations: {}
+
+podSecurityContext:
+  # Talos runtime images run as nonroot UID 65532.
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  privileged: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+# Command / args override for the container.
+# Default runs `talos serve --config /etc/talos/config.yaml`.
+command: []
+args:
+  - serve
+  - --config
+  - /etc/talos/config.yaml
+
+service:
+  type: ClusterIP
+  http:
+    port: 4420
+    # targetPort defaults to config.serve.http.port
+
+probes:
+  liveness:
+    enabled: true
+    path: /health/alive
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 6
+  readiness:
+    enabled: true
+    path: /health/ready
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  startup:
+    enabled: false
+    path: /health/alive
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# SQLite data (and any other state) under /var/lib/talos.
+persistence:
+  enabled: false
+  existingClaim: ""
+  storageClass: ""
+  size: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  annotations: {}
+
+# Runs `talos migrate up` as a pre-install / pre-upgrade Job hook.
+# The DSN is passed via the DB_DSN env var (overrides config.yaml), never on
+# the command line, so credentials do not leak into the pod spec.
+migration:
+  enabled: true
+  image:
+    repository: ""  # defaults to .Values.image.repository
+    tag: ""         # defaults to .Values.image.tag
+  # Pull the DSN from an existing Secret instead of config.db.dsn:
+  # (required — the chart fails render — when the DSN contains credentials)
+  dsnSecret:
+    name: ""  # if empty, DB_DSN falls back to config.db.dsn
+    key: "dsn"
+  # Override the migrate command entirely:
+  # command: ["talos", "migrate", "up"]
+  extraEnv: []
+
+# Auto-generate the secrets Talos needs at startup, idempotently:
+# - hmac: generated in-template (sprig randAlphaNum); the existing value is
+#   reused on upgrade via `lookup`, so issued tokens stay valid.
+# - jwks: a pre-install/pre-upgrade Job (`talos jwk generate`) writes an
+#   Ed25519 key pair into the <fullname>-jwks Secret (only if absent).
+# Set both to false to bring your own secrets via extraEnvSecrets / values.jwks.
+secretsGeneration:
+  hmac:
+    enabled: true
+  jwks:
+    enabled: true
+    kid: "prod-signing-1"
+    # Image that creates the JWKS Secret (needs a shell + kubectl).
+    kubectlImage:
+      repository: bitnami/kubectl
+      tag: "1.35"
+
+# ---------------------------------------------------------------------------
+# Talos configuration -> /etc/talos/config.yaml (rendered as-is with toYaml).
+# This is the single source of truth for serve ports, credentials, db, etc.
+# ---------------------------------------------------------------------------
+config:
+  serve:
+    http:
+      host: "0.0.0.0"
+      port: 4420
+      request_log:
+        exclude_health_endpoints: true
+      cors:
+        enabled: true
+        allowed_origins: []
+        allowed_methods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "DELETE"
+          - "PATCH"
+        allowed_headers:
+          - "Content-Type"
+          - "Authorization"
+          - "X-Forwarded-Host"
+        exposed_headers:
+          - "Content-Type"
+        allow_credentials: true
+        max_age: 86400
+        debug: false
+
+  credentials:
+    # REQUIRED: set to your actual public API URL (e.g. https://api.example.com)
+    # or inject CREDENTIALS_ISSUER via extraEnvSecrets.
+    issuer: ""
+    api_keys:
+      default_ttl: "720h"  # 30 days
+      max_ttl: "8760h"     # 365 days
+      prefix:
+        current: "talos"
+        retired: []
+    derived_tokens:
+      default_ttl: "1h"
+      jwt:
+        signing_keys:
+          # REQUIRED: provide your own signing keys. Either set values.jwks
+          # (mounted at /etc/talos/jwks.json, reference it as
+          # file:///etc/talos/jwks.json) or inject the URLs via
+          # CREDENTIALS_DERIVED_TOKENS_JWT_SIGNING_KEYS_URLS.
+          urls: []
+      macaroon:
+        prefix:
+          current: "mc"
+          retired: []
+
+  # Database. SQLite by default (pure-Go driver, no CGO). For PostgreSQL:
+  #   dsn: "postgres://talos:talos@talos-postgresql:5432/talos?sslmode=disable"
+  db:
+    dsn: "sqlite3:///var/lib/talos/talos.db?_journal_mode=WAL"
+
+  log:
+    level: "info"
+    format: "json"
+
+  # REQUIRED: Talos refuses to start without a 32+ char HMAC secret.
+  # NEVER set the value here: values.yaml is stored in the Helm release and is
+  # visible via `helm get values`. The `secrets` block is excluded from the
+  # ConfigMap — inject SECRETS_HMAC_CURRENT via a Kubernetes Secret with
+  # extraEnvSecrets only.
+  secrets:
+    hmac:
+      current: ""  # do NOT fill in — use SECRETS_HMAC_CURRENT via extraEnvSecrets
+      retired: []
+
+  tracing:
+    enabled: false
+    # service_name: "ory-talos"
+    # exporter: "otlp"
+    # endpoint: "tempo:4317"
+    # sample_rate: 1.0
+
+  # OSS accepts only "noop" — "redis"/"memory" are commercial-only and will
+  # fail to start even in OSS.
+  cache:
+    type: "noop"
+    ttl: "5m"
+
+  multitenancy:
+    enabled: false
+
+# ---------------------------------------------------------------------------
+# JSON Web Key Set (signing keys for derived tokens).
+# When set, the chart creates a Secret mounted at /etc/talos/jwks.json — a
+# safer alternative to embedding private keys in config.yaml as base64://.
+# Reference it in config as file:///etc/talos/jwks.json (file:// and https://
+# work in self-hosted builds; the Ory Network platform accepts only base64://).
+# Note: the subPath-mounted Secret does not auto-update on rotation — restart
+# the pods after rotating the keys.
+# ---------------------------------------------------------------------------
+jwks: ""
+# jwks: |
+#   {"keys":[{"alg":"EdDSA","crv":"Ed25519","d":"...","kid":"prod-001","kty":"OKP","use":"sig","x":"..."}]}
+
+extraEnvVars: []
+extraEnvSecrets: []
+#  # HMAC secret, required at startup (min 32 chars).
+#  - name: SECRETS_HMAC_CURRENT
+#    secretName: talos-secrets
+#    secretKey: hmacCurrent
+#  # Token issuer — set to your public API URL.
+#  - name: CREDENTIALS_ISSUER
+#    secretName: talos-secrets
+#    secretKey: issuer
+#  # Optional: signing key URLs (alternative to values.jwks).
+#  - name: CREDENTIALS_DERIVED_TOKENS_JWT_SIGNING_KEYS_URLS
+#    secretName: talos-secrets
+#    secretKey: jwksUrl
+
+extraConfigmaps: []
+#  - name: my-extra-config
+#    mountPath: /etc/talos/custom
+#    readOnly: true

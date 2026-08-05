@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secrets: {{ include "common.secretsChecksum" . }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "common.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.config.serve.http.port }}
+              protocol: TCP
+          {{- if or .Values.extraEnvVars .Values.extraEnvSecrets .Values.secretsGeneration.hmac.enabled }}
+          env:
+          {{- if .Values.secretsGeneration.hmac.enabled }}
+            - name: SECRETS_HMAC_CURRENT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.fullname" . }}-secrets
+                  key: hmac
+          {{- end }}
+          {{- with .Values.extraEnvVars }}
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- range .Values.extraEnvSecrets }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName }}
+                  key: {{ .secretKey }}
+          {{- end }}
+          {{- end }}
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            {{- include "common.probe" .Values.probes.liveness | nindent 12 }}
+          {{- end }}
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            {{- include "common.probe" .Values.probes.readiness | nindent 12 }}
+          {{- end }}
+          {{- if .Values.probes.startup.enabled }}
+          startupProbe:
+            {{- include "common.probe" .Values.probes.startup | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/talos
+              readOnly: true
+          {{- if or .Values.jwks .Values.secretsGeneration.jwks.enabled }}
+            - name: jwks
+              mountPath: /etc/talos/jwks.json
+              subPath: jwks.json
+              readOnly: true
+          {{- end }}
+          {{- if .Values.persistence.enabled }}
+            - name: data
+              mountPath: /var/lib/talos
+          {{- end }}
+          {{- with .Values.extraConfigmaps }}
+          {{- range . }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              readOnly: {{ .readOnly | default true }}
+              {{- if .subPath }}
+              subPath: {{ .subPath }}
+              {{- end }}
+          {{- end }}
+          {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "common.fullname" . }}-config
+      {{- if or .Values.jwks .Values.secretsGeneration.jwks.enabled }}
+        - name: jwks
+          secret:
+            secretName: {{ include "common.fullname" . }}-jwks
+      {{- end }}
+      {{- if .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-data" (include "common.fullname" .)) }}
+      {{- end }}
+      {{- with .Values.extraConfigmaps }}
+      {{- range . }}
+        - name: {{ .name }}
+          configMap:
+            name: {{ .name }}
+      {{- end }}
+      {{- end }}

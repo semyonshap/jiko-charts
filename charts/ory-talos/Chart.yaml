@@ -1,0 +1,26 @@
+apiVersion: v2
+name: ory-talos
+description: A Helm chart for Ory Talos — high-performance API key management service (issue, verify, derive JWT/macaroon tokens, revoke)
+
+type: application
+
+version: 0.1.0
+appVersion: "v26.2.0"
+
+home: https://github.com/SemyonShap
+icon: https://ory.com/favicon.ico
+sources:
+  - https://github.com/ory/talos
+keywords:
+  - ory
+  - talos
+  - apikey
+  - jwt
+  - macaroon
+  - authentication
+
+maintainers:
+  - name: SemyonShap
+    email: SemyonShapoval@gmail.com
+
+dependencies: []

@@ -1,0 +1,81 @@
+{{- if .Values.migration.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-migrate
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      name: {{ include "common.fullname" . }}-migrate
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          image: "{{ .Values.migration.image.repository | default .Values.image.repository }}:{{ .Values.migration.image.tag | default .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.migration.command }}
+          command:
+            {{- toYaml .Values.migration.command | nindent 12 }}
+          {{- else }}
+          command: ["talos", "migrate", "up"]
+          {{- end }}
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+          {{- if .Values.secretsGeneration.hmac.enabled }}
+            - name: SECRETS_HMAC_CURRENT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "common.fullname" . }}-secrets
+                  key: hmac
+          {{- end }}
+            - name: DB_DSN
+              {{- if .Values.migration.dsnSecret.name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.migration.dsnSecret.name }}
+                  key: {{ .Values.migration.dsnSecret.key | default "dsn" }}
+              {{- else }}
+              value: {{ .Values.config.db.dsn | quote }}
+              {{- end }}
+          {{- with .Values.migration.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/talos
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-data" (include "common.fullname" .)) }}
+      {{- end }}
+{{- end }}

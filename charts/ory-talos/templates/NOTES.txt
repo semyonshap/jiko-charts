@@ -1,0 +1,31 @@
+✔ {{ .Chart.Name }} deployed to {{ .Release.Namespace }}
+
+  Release:    {{ .Release.Name }}
+  Version:    {{ .Chart.AppVersion }}
+  Namespace:  {{ .Release.Namespace }}
+
+The Talos API is available at:
+
+  http://{{ include "common.fullname" . }}:{{ .Values.service.http.port }}
+
+To verify the deployment is running:
+
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "common.name" . }}
+{{- if .Values.migration.enabled }}
+
+Database migrations were applied as a pre-install / pre-upgrade Job hook.
+{{- end }}
+{{- if or .Values.secretsGeneration.hmac.enabled .Values.secretsGeneration.jwks.enabled }}
+
+Signing secrets ({{ include "common.fullname" . }}-secrets / -jwks) are generated
+automatically and reused on upgrade. To rotate: delete the Secret(s) and run
+`helm upgrade` again.
+{{- end }}
+{{- if and (contains "sqlite" .Values.config.db.dsn) (not .Values.persistence.enabled) }}
+
+⚠ WARNING: SQLite DSN detected but persistence is disabled — data will be lost
+  on pod restart. Set persistence.enabled=true.
+{{- end }}
+
+NOTE: The admin API has no built-in authentication — restrict it to an internal
+network or add a NetworkPolicy.
