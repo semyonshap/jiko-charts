@@ -27,6 +27,10 @@ spec:
         checksum/config: {{ dict "env" .Values.env "extraEnvVars" .Values.extraEnvVars "extraEnvSecrets" .Values.extraEnvSecrets "extraConfigmaps" .Values.extraConfigmaps | toJson | sha256sum }}
 
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.pod.securityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}

@@ -1,6 +1,6 @@
 dependencies:
 - name: nextjs
   repository: file://../nextjs
-  version: 0.1.1
-digest: sha256:7ae8e974f930f16b45c96f8465884c77e0473a24d7167b915b8bf0280ab720b0
-generated: "2026-08-04T15:05:52.9645099+07:00"
+  version: 0.1.2
+digest: sha256:64f6652543cba2d93a455dd89e0fd8c522cf519c5a79fddfa567bfdb6ebee1f0
+generated: "2026-08-06T20:13:22.669519+07:00"
