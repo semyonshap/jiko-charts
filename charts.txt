@@ -1,0 +1,6 @@
+charts/common
+charts/nextjs
+charts/nextjs-app
+charts/ory-admin
+charts/ory-auth
+charts/ory-talos

@@ -37,10 +37,7 @@ jobs:
 
           mkdir -p .release
 
-          for dir in charts/*/; do
-            dir="${dir%/}"
-            [ -f "$dir/Chart.yaml" ] || continue
-
+          while IFS= read -r dir; do
             name=$(yq -r '.name' "$dir/Chart.yaml")
             version=$(yq -r '.version' "$dir/Chart.yaml")
 
@@ -58,4 +55,4 @@ jobs:
             helm push ".release/$name-$version.tgz" "$OCI_BASE"
 
             echo "::endgroup::"
-          done
+          done < charts.txt
