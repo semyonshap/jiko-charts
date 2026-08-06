@@ -12,32 +12,10 @@ permissions:
   packages: write
 
 jobs:
-  detect-charts:
-    runs-on: ubuntu-latest
-    outputs:
-      dirs: ${{ steps.find.outputs.dirs }}
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Find chart directories
-        id: find
-        run: |
-          dirs=$(find charts -mindepth 1 -maxdepth 1 -type d \
-            -exec test -f '{}/Chart.yaml' \; -print \
-            | jq -R -s -c 'split("\n")[:-1]')
-          echo "dirs=$dirs" >> "$GITHUB_OUTPUT"
-
   release:
-    needs: detect-charts
-    if: needs.detect-charts.outputs.dirs != '[]'
     runs-on: ubuntu-latest
     env:
       OCI_BASE: oci://ghcr.io/${{ github.repository_owner }}/charts
-    strategy:
-      fail-fast: false
-      matrix:
-        dir: ${{ fromJson(needs.detect-charts.outputs.dirs) }}
-
     steps:
       - uses: actions/checkout@v7
 
@@ -46,12 +24,6 @@ jobs:
         with:
           version: v3.18.4
 
-      - name: Read chart name/version
-        id: info
-        run: |
-          echo "name=$(yq -r '.name' "${{ matrix.dir }}/Chart.yaml")" >> "$GITHUB_OUTPUT"
-          echo "version=$(yq -r '.version' "${{ matrix.dir }}/Chart.yaml")" >> "$GITHUB_OUTPUT"
-
       - name: Login to GHCR
         uses: docker/login-action@v4
         with:
@@ -59,26 +31,31 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Skip if this version already published
-        id: check
+      - name: Release all charts
         run: |
-          if helm show chart \
-              "$OCI_BASE/${{ steps.info.outputs.name }}" \
-              --version "${{ steps.info.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
+          set -euo pipefail
 
-      - name: Package and push
-        if: steps.check.outputs.exists == 'false'
-        run: |
-          helm dependency update "${{ matrix.dir }}"
-          helm lint "${{ matrix.dir }}"
-          helm package "${{ matrix.dir }}" --destination .release
-          helm push ".release/${{ steps.info.outputs.name }}-${{ steps.info.outputs.version }}.tgz" \
-            "$OCI_BASE"
+          mkdir -p .release
 
-      - name: Already published — skipping
-        if: steps.check.outputs.exists == 'true'
-        run: echo "${{ steps.info.outputs.name }}@${{ steps.info.outputs.version }} already exists, nothing to do."
+          for dir in charts/*/; do
+            dir="${dir%/}"
+            [ -f "$dir/Chart.yaml" ] || continue
+
+            name=$(yq -r '.name' "$dir/Chart.yaml")
+            version=$(yq -r '.version' "$dir/Chart.yaml")
+
+            echo "::group::$name@$version ($dir)"
+
+            if helm show chart "$OCI_BASE/$name" --version "$version" >/dev/null 2>&1; then
+              echo "$name@$version already exists, skipping."
+              echo "::endgroup::"
+              continue
+            fi
+
+            helm dependency update "$dir"
+            helm lint "$dir"
+            helm package "$dir" --destination .release
+            helm push ".release/$name-$version.tgz" "$OCI_BASE"
+
+            echo "::endgroup::"
+          done
