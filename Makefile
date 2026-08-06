@@ -1,4 +1,4 @@
-.PHONY: help lint lint-strict deps template values clean
+.PHONY: help lint lint-strict deps template values ct clean
 
 # Charts are discovered automatically: any directory under charts/ with a Chart.yaml
 CHARTS := $(shell for d in charts/*/; do [ -f "$$d/Chart.yaml" ] && echo "$${d%/}"; done)
@@ -25,6 +25,16 @@ template: deps ## Render manifests for all app charts
 
 values: ## Show default values of all charts
 	@for c in $(CHARTS); do echo "=== $$c ==="; helm show values "$$c"; done
+
+ct: ## Run chart-testing lint on changed charts
+	docker run --rm \
+		-v "$(CURDIR):/workdir" \
+		-w //workdir \
+		-e GIT_CONFIG_COUNT=1 \
+		-e GIT_CONFIG_KEY_0=safe.directory \
+		-e GIT_CONFIG_VALUE_0=/workdir \
+		quay.io/helmpack/chart-testing:v3.14.0 \
+		ct lint --target-branch main --remote origin --check-version-increment --chart-dirs charts
 
 clean: ## Remove packaged artifacts and materialized dependencies
 	rm -rf .release charts/*/charts
