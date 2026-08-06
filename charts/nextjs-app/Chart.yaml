@@ -4,7 +4,7 @@ description: A universal Helm chart for deploying any Next.js application
 
 type: application
 
-version: 0.1.0
+version: 0.1.1
 
 home: https://github.com/SemyonShap
 icon: https://nextjs.org/favicon.ico

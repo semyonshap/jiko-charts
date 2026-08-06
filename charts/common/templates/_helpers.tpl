@@ -1,12 +1,17 @@
 {{- define "common.name" -}}
-{{- .Chart.Name | trunc 63 | trimSuffix "-" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{- define "common.fullname" -}}
-{{- if contains .Chart.Name .Release.Name -}}
+{{- if .Values.fullnameOverride -}}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- if contains $name .Release.Name -}}
 {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- printf "%s-%s" .Release.Name .Chart.Name | trunc 63 | trimSuffix "-" -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 
@@ -35,12 +40,12 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{- define "common.probe" -}}
-{{- if .path }}
+{{- if .path -}}
 httpGet:
   path: {{ .path }}
   port: http
   scheme: HTTP
-{{- else }}
+{{- else -}}
 tcpSocket:
   port: http
 {{- end }}

@@ -1,0 +1,15 @@
+apiVersion: v2
+name: common
+description: Reusable Helm library chart with generic helpers (name, labels, serviceAccount) and generic NOTES
+
+type: library
+
+version: 0.1.1
+
+home: https://github.com/SemyonShap
+icon: https://helm.sh/img/helm.svg
+maintainers:
+  - name: SemyonShap
+    email: SemyonShapoval@gmail.com
+
+dependencies: []

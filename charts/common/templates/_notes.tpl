@@ -1,4 +1,4 @@
-{{- define "nextjs.notes" -}}
+{{- define "common.notes" -}}
 ✔ {{ .Chart.Name }} deployed to {{ .Release.Namespace }}
 
   Release:    {{ .Release.Name }}
@@ -8,8 +8,4 @@
 To verify the deployment is running:
 
   kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "common.name" . }}
-
-The service is available at:
-
-  http://{{ include "common.fullname" . }}:{{ .Values.service.port }}
 {{- end -}}

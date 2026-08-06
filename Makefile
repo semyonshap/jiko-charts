@@ -11,8 +11,8 @@ RELEASE_NAME ?= jiko
 help: ## Show this help message
 	@awk '/^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-20s\033[0m %s\n", $$1, substr($$0, index($$0, "##")+3)}' $(MAKEFILE_LIST)
 
-deps: ## Rebuild chart dependencies (materialize `nextjs` library into app charts)
-	@for c in $(APP_CHARTS); do helm dependency update "$$c"; done
+deps: ## Rebuild chart dependencies (materialize library charts into app charts)
+	@for c in $(CHARTS); do helm dependency update "$$c"; done
 
 lint: deps ## Lint all Helm charts
 	helm lint $(CHARTS)

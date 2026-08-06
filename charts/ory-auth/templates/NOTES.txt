@@ -1,1 +1,1 @@
-{{ include "nextjs.notes" . }}
+{{ include "common.notes" . }}

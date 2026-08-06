@@ -1,0 +1,4 @@
+# Default values for common.
+#
+# This library chart provides only generic templates (helpers + NOTES).
+# It has no values of its own — everything is configured in the parent chart.

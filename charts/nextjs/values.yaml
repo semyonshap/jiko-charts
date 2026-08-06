@@ -13,8 +13,8 @@ serviceAccount:
   automount: false
 
 service:
-  port: ""
-  targetPort: ""
+  port: 80
+  targetPort: 8080
 
 deployment:
   revisionHistoryLimit: 3
