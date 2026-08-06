@@ -1,0 +1,5 @@
+# Default values for nextjs-app.
+#
+# This chart is a thin wrapper around the `nextjs` library chart. Any value not
+# listed here falls back to the library defaults. For the full list of available
+# options study the library: charts/nextjs/values.yaml

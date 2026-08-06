@@ -6,6 +6,15 @@ service:
   port: 80
   targetPort: 8080
 
+livenessProbe:
+  path: /api/health
+
+readinessProbe:
+  path: /api/health
+
+startupProbe:
+  path: /api/health
+
 env:
   NEXT_PUBLIC_ORY_SDK_URL: ""
   ORY_HYDRA_URL: ""

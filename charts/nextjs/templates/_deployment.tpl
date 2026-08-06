@@ -79,12 +79,18 @@ spec:
           securityContext:
           {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- if (default true .Values.livenessProbe.enabled) }}
           livenessProbe:
             {{- include "common.probe" .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if (default true .Values.readinessProbe.enabled) }}
           readinessProbe:
             {{- include "common.probe" .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- if (default true .Values.startupProbe.enabled) }}
           startupProbe:
             {{- include "common.probe" .Values.startupProbe | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- with .Values.extraConfigmaps }}

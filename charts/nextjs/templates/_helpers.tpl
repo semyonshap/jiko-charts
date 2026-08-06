@@ -35,10 +35,15 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{- define "common.probe" -}}
+{{- if .path }}
 httpGet:
   path: {{ .path }}
   port: http
   scheme: HTTP
+{{- else }}
+tcpSocket:
+  port: http
+{{- end }}
 initialDelaySeconds: {{ .initialDelaySeconds }}
 periodSeconds: {{ .periodSeconds }}
 timeoutSeconds: {{ .timeoutSeconds }}
